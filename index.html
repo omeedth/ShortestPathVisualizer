@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Title</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link href="index.css" type="text/css" rel="stylesheet">
+
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    </head>
+    <body>
+
+        <div id="wrapper">
+
+            <!-- Header -->
+
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <a class="navbar-brand" href="#">Visualizer</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon"></span>
+                </button>
+              
+                <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+                  <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Generate Maze<span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Noise Function</a>
+                    </li>
+                  </ul>
+                  <form class="form-inline my-2 my-lg-0">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                  </form>
+                </div>
+              </nav>
+
+              <!-- Legend (Helpful Info) -->
+              
+              <div id="legend">
+
+                <ul class="list-group list-group-horizontal-sm">
+                  <li class="list-group-item active" name="Wall">
+                    <img src="images/Wall.png" />
+                    <p>Wall</p>
+                  </li>
+                  <li class="list-group-item" name="Person">
+                    <img src="images/Person.png" />
+                    <p>Person</p>
+                  </li>
+                  <li class="list-group-item" name="Destination">
+                    <img src="images/Destination.png" />
+                    <p>Destination</p>
+                  </li>
+                  <li class="list-group-item" name="Eraser">
+                    <!-- <img src="images/Destination.png" /> -->
+                    <p>Eraser</p>
+                  </li>
+                </ul>
+
+              </div>
+
+              <!-- Grid -->
+
+              <div id="grid-container-aligner">
+                <div id="grid-container">
+                
+                </div>   
+              </div>                         
+
+        </div>
+
+        <!-- Resizer Script -->
+
+        <script src="css-element-queries/src/ResizeSensor.js"></script>
+        <script src="css-element-queries/src/ElementQueries.js"></script>
+
+        <script>
+
+          function ObservableArray(items) {
+            var _self = this,
+              _array = [],
+              _handlers = {
+                itemadded: [],
+                itemremoved: [],
+                itemset: []
+              };
+
+            function defineIndexProperty(index) {
+              if (!(index in _self)) {
+                Object.defineProperty(_self, index, {
+                  configurable: true,
+                  enumerable: true,
+                  get: function() {
+                    return _array[index];
+                  },
+                  set: function(v) {
+                    _array[index] = v;
+                    raiseEvent({
+                      type: "itemset",
+                      index: index,
+                      item: v
+                    });
+                  }
+                });
+              }
+            }
+
+            function raiseEvent(event) {
+              _handlers[event.type].forEach(function(h) {
+                h.call(_self, event);
+              });
+            }
+
+            Object.defineProperty(_self, "addEventListener", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function(eventName, handler) {
+                eventName = ("" + eventName).toLowerCase();
+                if (!(eventName in _handlers)) throw new Error("Invalid event name.");
+                if (typeof handler !== "function") throw new Error("Invalid handler.");
+                _handlers[eventName].push(handler);
+              }
+            });
+
+            Object.defineProperty(_self, "removeEventListener", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function(eventName, handler) {
+                eventName = ("" + eventName).toLowerCase();
+                if (!(eventName in _handlers)) throw new Error("Invalid event name.");
+                if (typeof handler !== "function") throw new Error("Invalid handler.");
+                var h = _handlers[eventName];
+                var ln = h.length;
+                while (--ln >= 0) {
+                  if (h[ln] === handler) {
+                    h.splice(ln, 1);
+                  }
+                }
+              }
+            });
+
+            Object.defineProperty(_self, "push", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function() {
+                var index;
+                for (var i = 0, ln = arguments.length; i < ln; i++) {
+                  index = _array.length;
+                  _array.push(arguments[i]);
+                  defineIndexProperty(index);
+                  raiseEvent({
+                    type: "itemadded",
+                    index: index,
+                    item: arguments[i]
+                  });
+                }
+                return _array.length;
+              }
+            });
+
+            Object.defineProperty(_self, "pop", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function() {
+                if (_array.length > -1) {
+                  var index = _array.length - 1,
+                    item = _array.pop();
+                  delete _self[index];
+                  raiseEvent({
+                    type: "itemremoved",
+                    index: index,
+                    item: item
+                  });
+                  return item;
+                }
+              }
+            });
+
+            Object.defineProperty(_self, "unshift", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function() {
+                for (var i = 0, ln = arguments.length; i < ln; i++) {
+                  _array.splice(i, 0, arguments[i]);
+                  defineIndexProperty(_array.length - 1);
+                  raiseEvent({
+                    type: "itemadded",
+                    index: i,
+                    item: arguments[i]
+                  });
+                }
+                for (; i < _array.length; i++) {
+                  raiseEvent({
+                    type: "itemset",
+                    index: i,
+                    item: _array[i]
+                  });
+                }
+                return _array.length;
+              }
+            });
+
+            Object.defineProperty(_self, "shift", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function() {
+                if (_array.length > -1) {
+                  var item = _array.shift();
+                  delete _self[_array.length];
+                  raiseEvent({
+                    type: "itemremoved",
+                    index: 0,
+                    item: item
+                  });
+                  return item;
+                }
+              }
+            });
+
+            Object.defineProperty(_self, "splice", {
+              configurable: false,
+              enumerable: false,
+              writable: false,
+              value: function(index, howMany /*, element1, element2, ... */ ) {
+                var removed = [],
+                    item,
+                    pos;
+
+                index = index == null ? 0 : index < 0 ? _array.length + index : index;
+
+                howMany = howMany == null ? _array.length - index : howMany > 0 ? howMany : 0;
+
+                while (howMany--) {
+                  item = _array.splice(index, 1)[0];
+                  removed.push(item);
+                  delete _self[_array.length];
+                  raiseEvent({
+                    type: "itemremoved",
+                    index: index + removed.length - 1,
+                    item: item
+                  });
+                }
+
+                for (var i = 2, ln = arguments.length; i < ln; i++) {
+                  _array.splice(index, 0, arguments[i]);
+                  defineIndexProperty(_array.length - 1);
+                  raiseEvent({
+                    type: "itemadded",
+                    index: index,
+                    item: arguments[i]
+                  });
+                  index++;
+                }
+
+                return removed;
+              }
+            });
+
+            Object.defineProperty(_self, "length", {
+              configurable: false,
+              enumerable: false,
+              get: function() {
+                return _array.length;
+              },
+              set: function(value) {
+                var n = Number(value);
+                var length = _array.length;
+                if (n % 1 === 0 && n >= 0) {        
+                  if (n < length) {
+                    _self.splice(n);
+                  } else if (n > length) {
+                    _self.push.apply(_self, new Array(n - length));
+                  }
+                } else {
+                  throw new RangeError("Invalid array length");
+                }
+                _array.length = n;
+                return value;
+              }
+            });
+
+            Object.getOwnPropertyNames(Array.prototype).forEach(function(name) {
+              if (!(name in _self)) {
+                Object.defineProperty(_self, name, {
+                  configurable: false,
+                  enumerable: false,
+                  writable: false,
+                  value: Array.prototype[name]
+                });
+              }
+            });
+
+            if (items instanceof Array) {
+              _self.push.apply(_self, items);
+            }
+          }
+
+          // var renderQueue = {
+
+          // }
+
+          // async function renderHandler(frameData) {             
+          //   while(frameData.length > 0) {
+          //     setTimeout(renderToGrid(frameData.shift()),200);
+          //   }
+          // }
+          
+          // function renderToGrid(frameDatum) {
+
+          // }
+
+        </script>
+
+        <!-- Grid Script -->
+
+        <script>
+
+            function flattenIndex(m, r, c) {
+              R = m.length;
+              C = m[0].length;
+              return (r * C) + c;
+            }
+
+            function flattenIndexByWH(C, r, c) {
+              return (r * C) + c;
+            }
+
+            function unflattenIndex(m, i) {
+              R = m.length;
+              C = m[0].length;
+              r = ~~(i / C);
+              c = i % C;
+              return [r,c];
+            }
+
+            // Variables
+            var gridWidthHeight = 10;
+
+            /* Generates a grid with the given parameters 
+             * Parameters:
+             * 1. colCnt - # of columns
+             * 2. rowCnt - # of rows
+             * 3. width - width of each column
+             * 4. height - height of each column
+             */
+            function generateGrid(colCnt, rowCnt, width, height) {
+                var grid = $("#grid-container");
+                var containerWidth = grid.width;
+                for(var rows = 0; rows < rowCnt; rows++) {
+                    for(var columns = 0; columns < colCnt; columns++) {
+                        grid.append("<div class='grid'></div>")
+                    }
+                }
+                grid.css('grid-template-columns', 'repeat(' + colCnt + ',' + width + 'px)');
+                grid.css('grid-template-rows', 'repeat(' + rowCnt + ',' + height + 'px)');
+                // setupGridListeners();
+            }
+
+            /* Removes the squares in the grid */
+            function clearGrid() {
+                $(".grid").remove();
+            }
+
+            /* Removes all contents within grid (reassigns start and destination) */
+            function resetGrid() {              
+              cells.map((index,cell) => {
+                $(cell).empty();                
+                var pos = unflattenIndex(m,index);
+                var cellType = m[pos[0]][pos[1]]
+                console.log(cellType)
+                if(cellType == 'S') {
+                  $(cell).append("<img class='object_Person' src='images/Person.png' />");                     
+                } else if (cellType == '#') {
+                  $(cell).append("<img class='object_Wall' src='images/Wall.png' style='width: 100%; height: 100%; position: relative; z-index: 1;' />");
+                } else if (cellType == 'D') {
+                  $(cell).append("<img class='object_Destination' src='images/Destination.png' />");                                            
+                } else {
+                  // cells.append("<div class='grid'></div>");                                            
+                }                
+              });                            
+            }
+
+            /* Given the width and height of the screen, updates the grid */
+            function updateGrid() {                
+
+                // clearGrid();
+
+                // Width and Height of screen
+                var gridAligner = $("#grid-container-aligner");
+                var w = gridAligner.width();
+                var h = gridAligner.height();
+
+                console.log('Changed to: (' + w + ',' + h + ')');
+
+                var numCol = ~~(w / gridWidthHeight); // "~~" makes this integer division
+                var numRow = ~~(h / gridWidthHeight); // "~~" makes this integer division
+                
+                generateGrid(numCol,numRow,gridWidthHeight,gridWidthHeight);                
+
+            }
+
+            var legendElems = $('#legend').find('ul').children();
+            var object = $(legendElems.get(0)).attr('name');
+            console.log('Selected Object: ' + object);            
+            legendElems.click(
+              function() {                                   
+                legendElems.removeClass('active');
+
+                if($(this).hasClass('active')) {
+                  $(this).removeClass('active');
+                } else {
+                  $(this).addClass('active');
+                } 
+
+                object = $(this).attr('name');
+
+              }
+            );
+
+            function setupGridListeners() {
+              var grids = $('.grid');              
+              grids.mouseenter(
+                function() {
+                  event.preventDefault();
+                  if(object == 'Eraser') {
+
+                  } else {
+                    if($(this).children().length > 0) {
+                      // Already has something
+                    } else {
+                      $(this).append("<img class='preview' src='images/" + object + ".png' style='opacity: .5; width: 100%; height: 100%;' />");
+                    } 
+                  }                                                   
+                } 
+              );
+              grids.mouseleave(
+                function() {
+                  event.preventDefault();
+                  if(object == 'Eraser') {
+
+                  } else {
+                    $(this).find('.preview').remove(); 
+                  }
+                }
+              );
+              grids.click(
+                function() {
+                  event.preventDefault();
+                  if('Person') {
+                    $('.object_Person').remove(); 
+                  }
+                  if(object == 'Eraser') {
+                    $(this).empty();
+                  } else {
+                    if($(this).find('.object').length > 0) {
+                      // Already has something
+                    } else {
+                      $(this).find('.preview').remove(); 
+                      $(this).append("<img class='object_" + object + "' src='images/" + object + ".png' style='width: 100%; height: 100%; position: relative; z-index: 1;' />")                    
+                    }  
+                  }                  
+                }
+              );
+            }
+
+            function renderGridFromMatrix(m, width, height) {
+              var grid = $("#grid-container");
+              for(var row = 0; row < m.length; row++) {
+                  for(var col = 0; col < m[0].length; col++) {
+                    var obj = m[row][col];
+                    console.log('[' + row + ',' + col + '] -> ' + obj);        
+                    if(obj == 'S') {
+                      grid.append("<div class='grid start'><img class='object_Person' src='images/Person.png' /></div>");                     
+                    } else if (obj == '#') {
+                      grid.append("<div class='grid wall'><img class='object_Wall' src='images/Wall.png' style='width: 100%; height: 100%; position: relative; z-index: 1;' /></div>");                                             
+                    } else if (obj == 'D') {
+                      grid.append("<div class='grid destination'><img class='object_Destination' src='images/Destination.png' /></div>");                                            
+                    } else {
+                      grid.append("<div class='grid'></div>");                                            
+                    }
+                  }
+              }
+              grid.css('grid-template-columns', 'repeat(' + m[0].length + ',' + width + 'px)');
+              grid.css('grid-template-rows', 'repeat(' + m.length + ',' + height + 'px)');
+              // setupGridListeners();
+            }
+
+            /* Grid Algorithms */                        
+
+            var m = [
+              ['S','*','*','#','*','*','*'],
+              ['*','#','*','*','*','#','*'],
+              ['*','#','*','*','*','*','*'],
+              ['*','*','#','#','*','*','*'],
+              ['#','*','#','D','*','#','*']
+            ];
+
+            renderGridFromMatrix(m,50,50);
+            var cells = $('.grid');            
+
+            var start = [0,0];
+            var dest = [4,3];
+
+            // Max Row, and Col count
+            var R = 5;
+            var C = 7;
+
+            // Define directions for North, South, East, and West
+            dr = [-1, 1, 0, 0];
+            dc = [0, 0, 1, -1];
+
+            var visited = Array.from(Array(R), () => new Array(C).fill(false))
+            var prevVisited = Array.from(Array(R), () => new Array(C).fill(null));
+            var toVisit = [];
+
+            var moveCnt = 0;
+            var nodes_left_in_layer = 1;
+            var nodes_in_next_layer = 0
+
+            var reachedEnd = false;
+
+            toVisit.push(start);
+            prevVisited[0][0] = unflattenIndex(m,0); 
+
+            function exploreNeighbors(r, c) {                   
+              var cellsToExplore = [];
+              var delay = 25;
+
+              return new Promise((resolve, reject) => {
+                var i = 0;
+                var exploration = setInterval(exploreNeighborsStep, delay);
+                var lastValid = -1;
+
+                function exploreNeighborsStep() {
+                  if(lastValid != -1) {
+                      var lastRow = r + dr[lastValid];
+                      var lastColumn = c + dc[lastValid];
+                      var displayCellIndex = flattenIndex(m,lastRow,lastColumn);
+                      $(cells[displayCellIndex]).css('background','rgba(255, 255, 255, 0.8)');
+                      $(cells[displayCellIndex]).append('<div class="explored scale-in-center"></div>')
+                  }
+                  if(i < 4) {       
+
+                    var rr = r + dr[i];
+                    var cc = c + dc[i];                        
+
+                    i++;
+
+                    lastValid = -1;                
+
+                    // Skip invalid cells
+                    if(rr < 0 || cc < 0) {return;}
+                    if(rr >= R || cc >= C) {return;} 
+
+                    // Skip visited cells or impassable objects                    
+                    if(visited[rr][cc]) {return;}
+                    if(m[rr][cc] == '#') {return;}
+                    
+                    lastValid = i - 1;                    
+
+                    // Current Cell
+                    var displayCellIndex = flattenIndex(m,rr,cc);
+                    $(cells[displayCellIndex]).css('background','yellow');                                                   
+                    
+                    cellsToExplore.push([rr,cc]);
+                    prevVisited[rr][cc] = [r,c];
+                    visited[rr][cc] = true;
+                    toVisit.push([rr,cc]);                
+                    nodes_in_next_layer++;
+                  } else {                                     
+                    clearInterval(exploration);
+                    resolve();
+                  }                
+                }
+
+              });                            
+
+            }            
+
+            function findPath(destR, destC) {
+              var path = [];
+              var currR = destR;
+              var currC = destC;
+              var delay = 25;
+              while(!(currR == 0 && currC == 0)) {
+                path.push([currR,currC]);
+                [currR,currC] = prevVisited[currR][currC];
+              }  
+
+              var i = path.length - 1;
+              var pathPainter = setInterval(paintPath, 100);
+              var currPos = start;
+
+              function paintPath() {
+                console.log(i)
+                if(i >= 0) {                  
+                  var cellPos = path[i];
+                  i--;
+                  var displayCellIndex = flattenIndex(m,cellPos[0],cellPos[1]);
+                  var currCellIndex = flattenIndex(m, currPos[0], currPos[1]);
+                  currPos = cellPos;
+                  $(cells[currCellIndex]).empty();
+                  $(cells[currCellIndex]).append('<div class="shortest_path scale-in-center"></div>');
+                  $(cells[displayCellIndex]).append("<div class='grid start'><img class='object_Person' src='images/Person.png' /></div>");                  
+                } else {
+                  console.log('clearing path painter')
+                  clearInterval(pathPainter)
+                }
+              }
+
+              return path;
+            }
+
+            function BFS() {              
+              start = [0,0];
+
+              visited = Array.from(Array(R), () => new Array(C).fill(false))
+              prevVisited = Array.from(Array(R), () => new Array(C).fill(null));
+              toVisit = [];
+
+              moveCnt = 0;
+              nodes_left_in_layer = 1;
+              nodes_in_next_layer = 0
+              
+              toVisit.push(start);
+
+              var delay = 10;
+              var steps = setInterval(BFSStep, delay);              
+              function BFSStep() {
+                if(toVisit.length > 0) {
+                  var position = toVisit.shift(); // Contains (x,y) info, Array is indexed [y,x]                  
+                  visited[position[0]][position[1]] = true;
+                  console.log('[' + position[0] + ',' + position[1] + ']');                                  
+                  if(m[position[0]][position[1]] == 'D') {
+                    console.log('Destination!!');
+                    reachedEnd = true;
+                    var path = findPath(position[0],position[1]);
+                    console.log(path);
+                    console.log('clearing interval!')
+                    clearInterval(steps);
+                    return;
+                  }              
+                  clearInterval(steps);    
+                  exploreNeighbors(position[0],position[1]).then(() => {
+                    nodes_left_in_layer--;
+                    if(nodes_left_in_layer == 0) {
+                      nodes_left_in_layer = nodes_in_next_layer;
+                      nodes_in_next_layer = 0;
+                      moveCnt++;
+                    }
+                    steps = setInterval(BFSStep, delay);
+                  });                 
+                } else {
+                  console.log('clearing interval!')
+                  clearInterval(steps);
+                }              
+              }
+
+            } 
+
+            function BFSStepTest() {
+              if(toVisit.length > 0) {
+                var position = toVisit.shift(); // Contains (x,y) info, Array is indexed [y,x]                
+                visited[position[0]][position[1]] = true;
+                console.log('[' + position[0] + ',' + position[1] + ']');                                
+                if(m[position[0]][position[1]] == 'D') {                  
+                  reachedEnd = true;
+                  var path = findPath(position[0],position[1]);
+                  console.log(path);
+                }                  
+                exploreNeighbors(position[0],position[1]);
+                nodes_left_in_layer--;
+                if(nodes_left_in_layer == 0) {
+                  nodes_left_in_layer = nodes_in_next_layer;
+                  nodes_in_next_layer = 0;
+                  moveCnt++;
+                }
+              } else {                
+                clearInterval(steps);
+              }              
+            }                       
+
+        </script>
+
+    </body>
+</html>

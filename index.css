@@ -1,0 +1,159 @@
+/* Document Prep */
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Wrapper */
+
+#wrapper {
+    display:flex;
+    flex-direction: column;    
+
+    height: 100vh;
+    width: 100%;
+    background-color: white;
+}
+
+/* Legend */
+
+#legend {
+    width: 100%;
+    min-height: 100px;
+    display: flex;
+    justify-content: center;
+}
+
+#legend > ul > li {
+    display: flex;
+    align-items: center;
+}
+
+#legend > ul > li > img {
+    margin-right: 10px;
+}
+
+#legend > ul > li > p {
+    margin: 0;
+}
+
+/* #object-list {
+    list-style: none;
+    overflow: hidden;
+    border: 1px solid black;
+    padding: 0;
+    margin: 0;
+}
+
+#object-list:first-child {
+    float: left;
+}
+
+#object-list > li {
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid red;
+}
+
+#object-list > li > p {
+    text-align: center;
+} */
+
+/* Grid */
+
+#grid-container-aligner {
+    display: flex;
+    align-items: center;
+    
+    justify-content: center;
+    height: 100%;
+
+    border-top: 1px solid black;
+    background-color: #2196F3;
+}
+
+#grid-container {
+    display: grid;
+    grid-gap: 0;    
+    padding: 0;
+    margin: 0;
+    justify-content: center;
+}
+  
+#grid-container > div {
+    background-color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.grid {
+    margin:0;
+	padding:0;
+	border:none;
+	outline:1px solid #000;
+    display:inline-block;
+    position: relative;
+}
+
+/* Objects */
+
+.object_Person {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 2;
+}
+
+.object_Destination {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Specialty Cells */
+
+.explored {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: red;
+    width: 100%;
+    height: 100%;
+}
+
+.shortest_path {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: green;
+    width: 100%;
+    height: 100%;
+}
+
+/* Animation */
+
+.scale-in-center {
+	animation: scale-in-center 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+}
+
+@keyframes scale-in-center {
+    0% {
+      -webkit-transform: scale(0);
+              transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      -webkit-transform: scale(1);
+              transform: scale(1);
+      opacity: 1;
+    }
+}
