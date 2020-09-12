@@ -78,10 +78,10 @@
 
         <!-- Resizer Script -->
 
-        <script src="css-element-queries/src/ResizeSensor.js"></script>
-        <script src="css-element-queries/src/ElementQueries.js"></script>
+        <!-- <script src="css-element-queries/src/ResizeSensor.js"></script>
+        <script src="css-element-queries/src/ElementQueries.js"></script> -->
 
-        <script>
+        <!-- <script>
 
           function ObservableArray(items) {
             var _self = this,
@@ -322,11 +322,332 @@
 
           // }
 
-        </script>
+        </script> -->
 
-        <!-- Grid Script -->
+        <!-- Refactored Grid Script -->
 
         <script>
+          
+          /*
+              Defines what a Cell object is within a matrix 
+          */
+          class Cell {
+            constructor(size) {
+              this.size = size;
+              this.val = null;
+
+              // Visualization
+              this.container = document.createElement("div");
+              this.container.cell = this;
+              setStyleSize(this.container,'width',size);
+              setStyleSize(this.container,'height',size);
+              this.container.classList.add('cell');
+            }
+
+            // Class Methods //
+
+            setVal(object) {
+              this.val = object;
+            }
+
+            removeVal() {
+              this.val = null;
+            }
+
+            isEmpty() {
+              return this.val == null;
+            }
+
+            getVal() {
+              return this.val;
+            }
+
+            getContainer() {
+              return this.container;
+            }
+
+            setBackground(color) {
+              this.container.style.backgroundColor = color;
+            }
+
+            // Static Methods //
+
+          }
+
+          /*
+              Defines a Row object with a list of Cell objects 
+          */
+          class Row {
+
+            constructor(length, cellSize) {
+              this.length = length;
+              this.cells = [];
+              this.cellSize = cellSize;
+
+              // Visualization
+              this.container = document.createElement("div");
+              setStyleSize(this.container,"width",cellSize * length);
+              setStyleSize(this.container,"height",cellSize);
+              this.container.classList.add('row');
+
+              // Initialization
+              this.init();
+            }
+
+            // Class Methods //
+
+            init() {
+              this.fill();              
+              for(let i = 0; i < this.length; i++) {
+                this.container.appendChild(this.cells[i].getContainer());
+              }
+            }
+
+            insert(cell) {
+              if (!this.isFull()) {
+                this.cells.push(cell);
+                return true;
+              }
+              return false;
+            }
+
+            insertCells(cells) {
+              cells.forEach(cell => {
+                insert(cell);
+              });
+            }
+
+            fill() {
+              this.cells = [];
+              for (let i = 0; i < this.length; i++) {
+                this.insert(new Cell(this.cellSize));
+              }
+            }
+
+            isFull() {
+              return this.length == this.cells.length;
+            }
+
+            removeCell(index) {
+              if (this.cells.length > index) {
+                this.cells.splice(index,1);
+                return true;
+              }
+              return false;
+            }
+
+            getContainer() {
+              return this.container;
+            }
+
+            // Static Methods //
+
+          }
+
+          /*
+              Defines a Matrix object with a list of Row objects 
+          */
+          class Matrix {
+
+            constructor(rows, cols, cellSize) {
+              this.rows = rows;
+              this.cols = cols;
+              this.matrix = Matrix.generateMatrix(rows,cols,cellSize);
+              this.cellSize = cellSize;
+
+              // Visualization
+              this.container = document.createElement("div");              
+              setStyleSize(this.container,'width',cellSize * cols);
+              setStyleSize(this.container,'height',cellSize * rows);
+              this.container.classList.add('matrix');
+
+              // Initialization
+              this.init();
+            }
+
+            // Class Methods 
+            
+            init() {
+              this.matrix.forEach(row => {
+                this.container.appendChild(row.getContainer());
+              });              
+            }
+
+            getContainer() {
+              return this.container;
+            }
+
+            get(row, col) {
+              if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                return this.matrix[row].cells[col];
+              }       
+              return null;       
+            }
+
+            // Static methods            
+
+            static generateMatrix(rows, cols, cellSize) {
+              let rowList = [];
+              for (let row = 0; row < rows; row++) {
+                let r = new Row(cols,cellSize);
+                rowList.push(r);
+              }
+              return rowList;
+            } 
+
+          }          
+
+          class Board {
+
+            constructor(container, cellSize) {
+              this.width = parseInt(container.style.width,10);
+              this.height = parseInt(container.style.height,10);
+              this.cellSize = cellSize;
+              this.matrix = new Matrix(calcMatrixRows(this.height,this.cellSize),calcMatrixCols(this.width,this.cellSize),this.cellSize);
+
+              // Visualization
+              this.container = container;
+              this.container.classList.add('board');
+              
+              // Initialization
+              this.init();              
+            }
+
+            // Class Methods
+
+            init() {
+              this.container.appendChild(this.matrix.getContainer());
+            }
+
+            getContainer() {
+              return this.container;
+            }
+
+            // Static Methods
+
+          }
+
+          /*
+              Calculates the matrix width in cells
+              Input: containerWidth: width of the div container in pixels
+                     cellSize: width and height of the div cells in pixels
+              Output: matrix width in cells (int)
+          */
+          function calcMatrixCols(containerWidth, cellSize) {
+            return Math.floor(containerWidth / cellSize);
+          }
+
+          /*
+              Calculates the matrix height in cells
+              Input: containerHeight: height of the div container in pixels
+                     cellSize: width and height of the div cells in pixels
+              Output: matrix height in cells (int)
+          */
+          function calcMatrixRows(containerHeight, cellSize) {
+            return Math.floor(containerHeight / cellSize);
+          }
+
+          /*
+              Sets the size of a style of a DOM element
+              Input: element: DOM element
+                     style: name of an attribute that the element posesses (Must be one that takes size in pixels)
+                     size: size to set the style to
+                     unit: the unit the size is in (Default: Pixels)
+              Output: null
+          */
+          function setStyleSize(element, styleName, size, unit="px") {
+            element.style[styleName] = size.toString() + unit;
+          }
+
+          function findContainerWidth(child) {
+            return child.parentElement.clientWidth;
+          }
+
+          function findContainerHeight(child) {
+            return child.parentElement.clientHeight;
+          }
+
+          function cellCoordinates(matrixRect,x,y) {
+            let newX = x - matrixRect.x;
+            let newY = y - matrixRect.y;
+            let col = Math.floor(newX / CELL_SIZE);
+            let row = Math.floor(newY / CELL_SIZE);
+            return [row,col];
+          }
+
+          function transitionToColor(element, goalColor, steps, delay=50) {
+            let currentColor = element.style.backgroundColor;
+            let red_change = (currentColor[0] - goalColor[0]) / steps;
+            let green_change = (currentColor[1] - goalColor[1]) / steps;
+            let blue_change = (currentColor[2] - goalColor[2]) / steps;
+            let transparency_change = (currentColor[3] - goalColor[3]) / steps;
+            let stepCount = 0;
+            let timer = setInterval(() => {
+              currentColor[0] = parseInt(currentColor[0] - red_change);
+              currentColor[1] = parseInt(currentColor[1] - green_change);
+              currentColor[2] = parseInt(currentColor[2] - blue_change);
+              currentColor[3] = parseFloat(currentColor[3] - goalColor[3])
+              element.style.backgroundColor = 'rgba(' + currentColor.toString() + ')';
+              if (stepCount >= steps) {
+                element.style.backgroundColor = 'rgba(' + goalColor.toString() + ')';
+                clearInterval(timer)
+              }
+            },delay)
+          }
+
+          // function rgbToArray(rgbStr) {
+          //   let rgb = rgb.substring(4, rgb.length-1)
+          //                 .replace(/ /g, '')
+          //                 .split(',');
+          //   rgb.forEach
+          // }
+
+        </script>
+
+        <!-- Utilization -->
+
+        <script>
+
+            // Important Variables
+            CELL_SIZE = 50;
+            GRID = document.getElementById("grid-container");
+
+            setStyleSize(GRID,"width",findContainerWidth(GRID));
+            setStyleSize(GRID,"height",findContainerHeight(GRID));
+            board = new Board(GRID,CELL_SIZE);
+
+            // Matrix Variables
+            matrixRect = board.matrix.getContainer().getBoundingClientRect();
+
+        </script>
+
+        <!-- Listeners -->
+
+        <script>
+
+          board.matrix.getContainer().addEventListener("mouseover", (e) => {
+            // let coordinates = cellCoordinates(matrixRect,e.clientX,e.clientY);
+            // let cell = board.matrix.get(coordinates[0],coordinates[1]);
+            let cell = e.target.cell;
+            if (cell) {
+              cell.setBackground('rgba(' + [255,0,0,1].toString() + ')');
+            }            
+          });
+
+          board.matrix.getContainer().addEventListener("mouseout", (e) => {            
+            // let coordinates = cellCoordinates(matrixRect,e.clientX,e.clientY);
+            let cell = e.target.cell;                    
+            if (cell) {
+              // transitionToColor(cell,[0,0,0,0],5);
+              cell.setBackground("rgba(" + [0,0,0,0].toString() + ")");
+            }            
+          });
+
+        </script>
+
+        <!-- Grid Script -->        
+
+        <!-- <script>
 
             function flattenIndex(m, r, c) {
               R = m.length;
@@ -535,9 +856,9 @@
             toVisit.push(start);
             prevVisited[0][0] = unflattenIndex(m,0); 
 
-            function exploreNeighbors(r, c) {                   
+            function exploreNeighbors(r, c, delay) {                   
               var cellsToExplore = [];
-              var delay = 25;
+              // var delay = 25;
 
               return new Promise((resolve, reject) => {
                 var i = 0;
@@ -624,7 +945,7 @@
               return path;
             }
 
-            function BFS() {              
+            function BFS(delay) {              
               start = [0,0];
 
               visited = Array.from(Array(R), () => new Array(C).fill(false))
@@ -636,25 +957,25 @@
               nodes_in_next_layer = 0
               
               toVisit.push(start);
-
-              var delay = 10;
+              
+              // var delay = 10;
               var steps = setInterval(BFSStep, delay);              
               function BFSStep() {
                 if(toVisit.length > 0) {
                   var position = toVisit.shift(); // Contains (x,y) info, Array is indexed [y,x]                  
                   visited[position[0]][position[1]] = true;
-                  console.log('[' + position[0] + ',' + position[1] + ']');                                  
+                  // console.log('[' + position[0] + ',' + position[1] + ']');                                  
                   if(m[position[0]][position[1]] == 'D') {
-                    console.log('Destination!!');
+                    // console.log('Destination!!');
                     reachedEnd = true;
                     var path = findPath(position[0],position[1]);
-                    console.log(path);
-                    console.log('clearing interval!')
+                    // console.log(path);
+                    // console.log('clearing interval!')
                     clearInterval(steps);
                     return;
                   }              
                   clearInterval(steps);    
-                  exploreNeighbors(position[0],position[1]).then(() => {
+                  exploreNeighbors(position[0],position[1],delay*2.5).then(() => {
                     nodes_left_in_layer--;
                     if(nodes_left_in_layer == 0) {
                       nodes_left_in_layer = nodes_in_next_layer;
@@ -664,13 +985,14 @@
                     steps = setInterval(BFSStep, delay);
                   });                 
                 } else {
-                  console.log('clearing interval!')
+                  // console.log('clearing interval!')
                   clearInterval(steps);
                 }              
               }
 
             } 
 
+            // Test
             function BFSStepTest() {
               if(toVisit.length > 0) {
                 var position = toVisit.shift(); // Contains (x,y) info, Array is indexed [y,x]                
@@ -691,9 +1013,15 @@
               } else {                
                 clearInterval(steps);
               }              
-            }                       
+            }    
 
-        </script>
+            // Function used to visualize the function
+            function visualize(func, delay) {
+              resetGrid()
+              func(delay)
+            }                   
+
+        </script> -->
 
     </body>
 </html>

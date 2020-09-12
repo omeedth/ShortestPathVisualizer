@@ -62,6 +62,37 @@ html, body {
     text-align: center;
 } */
 
+/* Refactored Grid */
+
+.cell {
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    border: 1px solid black;
+}
+
+.row {
+    padding: 0;
+    margin: 0;
+    display: block;
+    outline: none;
+}
+
+.matrix {
+    padding: 0;
+    margin: 0;
+    display: block;
+    border: 1px solid black;
+}
+
+.board {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+}
+
 /* Grid */
 
 #grid-container-aligner {
@@ -75,13 +106,13 @@ html, body {
     background-color: #2196F3;
 }
 
-#grid-container {
+/* #grid-container {
     display: grid;
     grid-gap: 0;    
     padding: 0;
     margin: 0;
     justify-content: center;
-}
+} */
   
 #grid-container > div {
     background-color: rgba(255, 255, 255, 0.8);
