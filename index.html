@@ -332,9 +332,13 @@
               Defines what a Cell object is within a matrix 
           */
           class Cell {
-            constructor(size) {
+            constructor(size, rowIndex, colIndex, matrix) {
               this.size = size;
               this.val = null;
+
+              this.rowIndex = rowIndex;
+              this.colIndex = colIndex;
+              this.matrix = matrix;
 
               // Visualization
               this.container = document.createElement("div");
@@ -342,15 +346,47 @@
               setStyleSize(this.container,'width',size);
               setStyleSize(this.container,'height',size);
               this.container.classList.add('cell');
+              // this.container.classList.add('scale-in-center');
             }
 
             // Class Methods //
 
+            removeCellChildElements() {
+              this.container.childNodes.forEach(child => {
+                this.container.removeChild(child);
+              })
+              if(objToDOM.has(this.val)) {
+                this.addChildElement(objToDOM.get(this.val));
+              }
+            }
+
+            exploredCell() {
+              this.removeCellChildElements();
+              if (this.container.childNodes.length == 0) {
+                let exploredCell = document.createElement('div');
+                this.addChildElement(exploredCell);
+                exploredCell.classList.add("explored", "scale-in-center"); 
+              }                   
+            }
+
+            shortestPathCell() {
+              this.removeCellChildElements();
+              if (this.container.childNodes.length == 0) {
+                let pathCell = document.createElement('div');
+                this.addChildElement(pathCell);
+                pathCell.classList.add("shortest_path", "scale-in-center"); 
+              }              
+            }
+
             setVal(object) {
-              this.val = object;
+              if (!this.val && objToDOM.has(object)) {
+                this.val = object;
+                this.addChildElement(objToDOM.get(object));
+              }              
             }
 
             removeVal() {
+              this.removeChild(this.container.firstChild);
               this.val = null;
             }
 
@@ -362,8 +398,34 @@
               return this.val;
             }
 
+            getNeighbors() {
+              let neighbors = []
+              
+              let possibilites = [[this.rowIndex-1,this.colIndex],[this.rowIndex,this.colIndex+1],[this.rowIndex+1,this.colIndex],[this.rowIndex,this.colIndex-1]];
+              for (let i = 0; i < 4; i++) {
+                let possibility = this.matrix.get(possibilites[i][0],possibilites[i][1]);                
+                if (possibility != null) {
+                  neighbors.push(possibility);
+                }
+              }
+
+              return neighbors;
+            }
+
             getContainer() {
               return this.container;
+            }
+
+            addChildElement(element) {
+              if (element) {
+                this.container.appendChild(element);
+              }              
+            }
+
+            removeChildElement(element) {
+              if (element) {
+                this.container.removeChild(element);
+              }              
             }
 
             setBackground(color) {
@@ -379,10 +441,14 @@
           */
           class Row {
 
-            constructor(length, cellSize) {
+            constructor(length, rowIndex, cellSize, matrix) {
               this.length = length;
               this.cells = [];
               this.cellSize = cellSize;
+
+              this.matrix = matrix;
+
+              this.rowIndex = rowIndex;
 
               // Visualization
               this.container = document.createElement("div");
@@ -420,7 +486,7 @@
             fill() {
               this.cells = [];
               for (let i = 0; i < this.length; i++) {
-                this.insert(new Cell(this.cellSize));
+                this.insert(new Cell(this.cellSize, this.rowIndex, i, this.matrix));
               }
             }
 
@@ -452,7 +518,7 @@
             constructor(rows, cols, cellSize) {
               this.rows = rows;
               this.cols = cols;
-              this.matrix = Matrix.generateMatrix(rows,cols,cellSize);
+              this.matrix = Matrix.generateMatrix(this,rows,cols,cellSize);
               this.cellSize = cellSize;
 
               // Visualization
@@ -477,6 +543,7 @@
               return this.container;
             }
 
+            // Separated
             get(row, col) {
               if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
                 return this.matrix[row].cells[col];
@@ -484,12 +551,23 @@
               return null;       
             }
 
+            // // Joined
+            // get(coordinates) {
+            //   return this.get(coordinates[0],coordinates[1]);
+            // }
+
+            randomCoordinates() {
+              let row = Math.floor(Math.random() * this.rows);
+              let col = Math.floor(Math.random() * this.cols);
+              return [row,col];
+            }
+
             // Static methods            
 
-            static generateMatrix(rows, cols, cellSize) {
+            static generateMatrix(matrix, rows, cols, cellSize) {
               let rowList = [];
               for (let row = 0; row < rows; row++) {
-                let r = new Row(cols,cellSize);
+                let r = new Row(cols,row,cellSize,matrix);
                 rowList.push(r);
               }
               return rowList;
@@ -504,6 +582,9 @@
               this.height = parseInt(container.style.height,10);
               this.cellSize = cellSize;
               this.matrix = new Matrix(calcMatrixRows(this.height,this.cellSize),calcMatrixCols(this.width,this.cellSize),this.cellSize);
+
+              this.player = null;
+              this.flags = [];
 
               // Visualization
               this.container = container;
@@ -523,8 +604,60 @@
               return this.container;
             }
 
+            addPlayer(coordinates) {
+              if (!this.player && !this.matrix.get(coordinates[0],coordinates[1]).getVal()) {
+                let targetCell = this.matrix.get(coordinates[0],coordinates[1]);
+                targetCell.setVal(PLAYER);
+                this.player = targetCell;                
+                return targetCell;             
+              }
+              return null;
+            }
+
+            addFlag(coordinates) {
+              if (!this.matrix.get(coordinates[0],coordinates[1]).getVal()) {
+                let targetCell = this.matrix.get(coordinates[0],coordinates[1]);
+                targetCell.setVal(FLAG);
+                this.flags.push(targetCell);                
+                return targetCell;             
+              }
+              return null;
+            }
+
+            addWall(coordinates) {
+              if (!this.matrix.get(coordinates[0],coordinates[1]).getVal()) {
+                this.matrix.get(coordinates[0],coordinates[1]).setVal(WALL);            
+                return coordinates;             
+              }
+              return -1;
+            }
+
             // Static Methods
 
+          }
+
+          function createPlayer() {
+            let player = document.createElement("div");
+            player.classList.add('object_Person');
+            player.style.backgroundImage = "url('images/person.png')";
+            player.style.backgroundSize = 'contain';
+            return player;
+          }
+
+          function createWall() {
+            let wall = document.createElement("div");
+            wall.classList.add('object_Wall');
+            wall.style.backgroundImage = "url('images/wall.png')";
+            wall.style.backgroundSize = 'contain';
+            return wall;
+          }
+
+          function createFlag() {
+            let flag = document.createElement("div");
+            flag.classList.add('object_Destination');
+            flag.style.backgroundImage = "url('images/destination.png')";
+            flag.style.backgroundSize = 'contain';
+            return flag;
           }
 
           /*
@@ -604,20 +737,97 @@
 
         </script>
 
-        <!-- Utilization -->
+        <!-- Helper Data Types -->
 
         <script>
 
-            // Important Variables
-            CELL_SIZE = 50;
-            GRID = document.getElementById("grid-container");
+          // Queue class 
+          class Queue { 
 
-            setStyleSize(GRID,"width",findContainerWidth(GRID));
-            setStyleSize(GRID,"height",findContainerHeight(GRID));
-            board = new Board(GRID,CELL_SIZE);
+              // Array is used to implement a Queue 
+              constructor() 
+              { 
+                  this.items = []; 
+              } 
+                                          
+              // enqueue function 
+              enqueue(element) 
+              {     
+                  // adding element to the queue 
+                  this.items.push(element); 
+              }
 
-            // Matrix Variables
-            matrixRect = board.matrix.getContainer().getBoundingClientRect();
+              // dequeue function 
+              dequeue() 
+              { 
+                  // removing element from the queue 
+                  // returns underflow when called  
+                  // on empty queue 
+                  if(this.isEmpty()) 
+                      return "Underflow"; 
+                  return this.items.shift(); 
+              } 
+
+              // front function 
+              front() 
+              { 
+                  // returns the Front element of  
+                  // the queue without removing it. 
+                  if(this.isEmpty()) 
+                      return "No elements in Queue"; 
+                  return this.items[0]; 
+              }
+
+              // isEmpty function 
+              isEmpty() 
+              { 
+                  // return true if the queue is empty. 
+                  return this.items.length == 0; 
+              } 
+
+              // printQueue function 
+              printQueue() 
+              { 
+                  var str = ""; 
+                  for(var i = 0; i < this.items.length; i++) 
+                      str += this.items[i] +" "; 
+                  return str; 
+              } 
+
+          } 
+
+        </script>
+
+        <!-- Initialization -->
+
+        <script>
+
+          // Important Variables
+          CELL_SIZE = 30;
+          GRID = document.getElementById("grid-container");
+
+          PLAYER = 1; // 1 per board
+          WALL = 2; // infinite
+          FLAG = 3; // 1 for most search algorithms, but 2 or more for others
+
+          let objToDOM = new Map([
+              [PLAYER, createPlayer()],
+              [WALL, createWall()],
+              [FLAG, createFlag()]
+          ]);
+
+          setStyleSize(GRID,"width",findContainerWidth(GRID));
+          setStyleSize(GRID,"height",findContainerHeight(GRID));
+          board = new Board(GRID,CELL_SIZE);
+
+          ROWS = board.matrix.rows;
+          COLS = board.matrix.cols;
+
+          board.addPlayer(board.matrix.randomCoordinates());
+          board.addFlag(board.matrix.randomCoordinates());
+
+          // Matrix Variables
+          matrixRect = board.matrix.getContainer().getBoundingClientRect();
 
         </script>
 
@@ -630,7 +840,7 @@
             // let cell = board.matrix.get(coordinates[0],coordinates[1]);
             let cell = e.target.cell;
             if (cell) {
-              cell.setBackground('rgba(' + [255,0,0,1].toString() + ')');
+              // cell.setBackground('rgba(' + [255,0,0,1].toString() + ')');
             }            
           });
 
@@ -639,11 +849,149 @@
             let cell = e.target.cell;                    
             if (cell) {
               // transitionToColor(cell,[0,0,0,0],5);
-              cell.setBackground("rgba(" + [0,0,0,0].toString() + ")");
+              // cell.setBackground("rgba(" + [0,0,0,0].toString() + ")");
+            }            
+          });
+
+          board.matrix.getContainer().addEventListener("click", (e) => {            
+            // let coordinates = cellCoordinates(matrixRect,e.clientX,e.clientY);
+            let cell = e.target.cell;                    
+            if (cell) {
+              console.log("Cell: (" + cell.rowIndex + ',' + cell.colIndex + ')');
             }            
           });
 
         </script>
+
+        <!-- Algorithms -->
+
+        <script>
+
+          // previousVisited: Matrix (Same size as the board)
+          // dest: Cell (The cell with the flag)
+          function findShortestPath(prevVisited, dest) {
+            let path = [];
+            let n = dest;            
+            while(n != null) {              
+              path.push(n);
+              n = prevVisited[n.rowIndex][n.colIndex]
+            }
+            return path.reverse();
+          }
+
+          function paintShortestPath(shortestPath,delay) {
+            let i = 0;
+            if (delay > 0) {
+              let paintCell = setInterval(() => {                
+                if (i < shortestPath.length) {
+                  let cell = shortestPath[i];               
+                  cell.shortestPathCell();   
+                  // cell.container.classList.remove('explored');
+                  // cell.container.classList.add('shortest_path');
+                  i++;
+                } else {
+                  clearInterval(paintCell);
+                }
+              },delay);
+            } else {
+              while (i < shortestPath.length) {
+                  let cell = shortestPath[i];                  
+                  cell.container.classList.remove('explored');
+                  cell.container.classList.add('shortest_path');
+                  i++;
+              }
+            }         
+          }
+
+          function BFS(node, target, board, delay) {
+            if (!node || !target) {
+              return;
+            }
+
+            // Create a Queue and add our initial node in it
+            let q = new Queue(board.matrix.rows * board.matrix.cols);
+            let prevVisited = Array.from(Array(ROWS),() => new Array(COLS).fill(null));
+            let explored = new Set();
+            q.enqueue(node);
+
+            // Mark the first node as explored explored.
+            explored.add(node);
+
+            if (delay > 0) {
+              let BFSStep = setInterval(() => {
+              let t = q.dequeue();
+
+              // Log every element that comes out of the Queue
+              // console.log(t);
+
+              // 1. In the edges object, we search for nodes this node is directly connected to.
+              // 2. We filter out the nodes that have already been explored.
+              // 3. Then we mark each unexplored node as explored and add it to the queue.
+              let edges = t.getNeighbors();
+
+              edges
+                .filter(n => !explored.has(n))
+                .forEach(n => {
+                  // Update PrevVisited
+                  prevVisited[n.rowIndex][n.colIndex] = t;
+
+                  // If found target
+                  if(n == target) {                    
+                    let path = findShortestPath(prevVisited,n);                    
+                    paintShortestPath(path,delay);
+                    clearInterval(BFSStep);                  
+                    return;
+                  }
+
+                  explored.add(n);
+                  n.exploredCell();
+                  // n.container.classList.add("explored");
+                  q.enqueue(n);
+                });
+              }, delay);
+            } else {
+              // We'll continue till our queue gets empty
+              while (!q.isEmpty()) {
+                let t = q.dequeue();
+
+                // Log every element that comes out of the Queue
+                // console.log(t);
+
+                // 1. In the edges object, we search for nodes this node is directly connected to.
+                // 2. We filter out the nodes that have already been explored.
+                // 3. Then we mark each unexplored node as explored and add it to the queue.
+                let edges = t.getNeighbors();
+
+                edges
+                .filter(n => !explored.has(n))
+                .forEach(n => {
+                  // Update PrevVisited
+                  prevVisited[n.rowIndex][n.colIndex] = t;
+
+                  if(n == target) {
+                    let path = findShortestPath(prevVisited,n);                    
+                    paintShortestPath(path,delay);
+                    return;
+                  }
+                  explored.add(n);
+                  n.container.classList.add("explored");
+                  q.enqueue(n);
+                });
+              }
+            }
+            
+          }
+
+        </script>
+
+        <!-- Utilization -->
+
+        <script>          
+
+          let delay = 5;
+          BFS(board.player,board.flags[0],board,delay);
+
+      </script>
 
         <!-- Grid Script -->        
 
@@ -948,8 +1296,8 @@
             function BFS(delay) {              
               start = [0,0];
 
-              visited = Array.from(Array(R), () => new Array(C).fill(false))
-              prevVisited = Array.from(Array(R), () => new Array(C).fill(null));
+              visited = Array.from(Array(R), () => new Array(C).fill(false))        // Make a matrix of false values for visited
+              prevVisited = Array.from(Array(R), () => new Array(C).fill(null));    // make a matrix of null values showing that there are no previous visited cells
               toVisit = [];
 
               moveCnt = 0;

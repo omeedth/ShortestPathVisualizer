@@ -141,33 +141,44 @@ html, body {
     z-index: 2;
 }
 
-.object_Destination {
-    position: absolute;
+.object_Wall {
+    position: relative;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    z-index: 1;
+    z-index: 2;
+}
+
+.object_Destination {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 2;
 }
 
 /* Specialty Cells */
 
 .explored {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     background: red;
     width: 100%;
     height: 100%;
+    z-index: 0;
 }
 
 .shortest_path {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     background: green;
     width: 100%;
     height: 100%;
+    z-index: 0;
 }
 
 /* Animation */
